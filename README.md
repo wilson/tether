@@ -1,11 +1,11 @@
 # tether
 ![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)
 
-**Entropic Optimal Transport (EOT) for High-Friction Networks.**
+**Ballistic transport for high-latency, lossy, or hostile networks.**
 
 `tether` is a research networking stack designed for environments where latency is strictly constrained by physics and link quality is probabilistic (e.g., satellite constellations, quantum computer microwave-steering, or heavily-oversubscribed data center fabrics).
 
-It abandons the "Stop-and-Wait" determinism of TCP in favor of **Schrödinger Bridge** dynamics, treating data transmission as a probability distribution of mass rather than a serialized stream of messages.
+It abandons the "Stop-and-Wait" determinism of TCP in favor of **Schrödinger Bridge** dynamics, treating data transmission as a probability distribution of mass rather than a serialized stream of messages. Entropic Optimal Transport (EOT) is a direct source of inspiration for Tether.
 
 ## The Problem: The Acknowledgement Tax
 
