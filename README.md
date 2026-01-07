@@ -1,65 +1,57 @@
 # tether
 ![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)
 
-**Ballistic transport for high-latency, lossy, or hostile networks.**
+**A sovereign transport protocol for finite networks.**
 
-`tether` is a research networking stack designed for environments where latency is strictly constrained by physics and link quality is probabilistic (e.g., satellite constellations, quantum computer microwave-steering, or heavily-oversubscribed data center fabrics).
+This is the reference implementation of [Tether](https://github.com/wilson/rfc/blob/ultra2krad4u/chronos/0001.md).
 
-It abandons the "Stop-and-Wait" determinism of TCP in favor of **Schrödinger Bridge** dynamics, treating data transmission as a probability distribution of mass rather than a serialized stream of messages. Entropic Optimal Transport (EOT) is a direct source of inspiration for Tether.
+It is a connection-oriented, datagram-agnostic networking stack designed to operate deterministically across all reference frames—from 100GbE datacenter fabrics to high-latency deep-space links. It rejects the "Best Effort" and "Open World" assumptions of the IP stack in favor of **Explicit Capacity** and **Cryptographic Identity**.
 
-## The Problem: The Acknowledgement Tax
+## Architecture
 
-Standard protocols (TCP/QUIC) assume that the cost of coordination (ACKs, Handshakes) is negligible compared to bandwidth. In high-friction regimes (where lag is non-trivial or packet loss is a feature of the medium) this assumption fails.
+Tether treats bandwidth as a currency and latency as a physical constant.
 
-1.  **ACK Storms:** Waiting for confirmation on a 500ms RTT link halts throughput.
-2.  **Jitter Amplification:** Retransmission logic often exacerbates congestion (bufferbloat).
-3.  **Context Blindness:** A firewall sees "Port 443" but cannot see "This packet is an Authentication Command sent to a Monitoring Node."
+### Explicit Capacity
+Transmission is transactional. A node **MUST NOT** transmit data unless it has been explicitly granted the capacity to do so by the receiver.
+* **Congestion Control:** Congestion is impossible because data is never sent unless buffer space is pre-reserved.
+* **Flow Dynamics:** Eliminates ACK storms by requiring prepaid receipts.
 
-## The Solution: Ballistic Networking
+### Speculative Discovery
+To bridge the void between disconnected nodes, Tether defines a mechanism for **Speculative Transmission**.
+* The Initiator expends its own resources to fund the Receiver's ability to reply.
+* This enables "Cold Start" discovery without violating the "Finite Universe" constraint.
 
-`tether` implements a **Single-Context Hyperplane**. It does not distinguish between Transport and Application layers.
+### Branchless 64-Byte Header
+The protocol uses a fixed-width, branchless 64-byte header for every frame.
+* **No Opcodes:** Every field (Grant, NACK, Timestamp) is evaluated in every packet.
+* **Determinism:** Processing time is constant (`O(1)`) regardless of payload or network state.
 
-### 1. Solitons (Probabilistic Transmissions)
-Data is not segmented; it is emitted as **Solitons**: erasure-coded bursts of immutable state (`Atoms`).
-* **Ballistic Erasure:** The sender calculates the channel entropy (noise floor) and emits the necessary `N` shards to guarantee reconstruction with the desired (default `99.999%`) confidence.
-* **Zero-ACK:** The receiver reconstructs the state. It does not reply. The sender stops transmitting when the "Entropy Budget" is exhausted. Application-layer responses can optionally be used to tune such a budget as the "link stabilizes".
+## Hardware Acceleration
 
-### 2. Sinkhorn Routing
-Flow control is modeled as a thermodynamic problem using **Sinkhorn Distances**.
-* **Congestion** is treated as **Heat**, which effectively produces "resistance".
-* As the link "heats up" and the cost increases, the sender naturally throttles emission to maintain the optimal transport plan.
+Tether is designed for mechanical sympathy.
 
-### 3. Physics-Aware Filtering (OWASP AppSensor-inspired)
-Routing decisions are made based on the **Capabilities** of the destination, not its address.
-* The protocol header contains a `Context Hash`: a cryptographic binding to the receiver's hardware constraints (e.g., "Must support f64 math").
-* **Result:** A packet destined for a node that cannot physically execute the payload is dropped at the NIC level, long before "userspace".
+This repository initially focuses on the **Intel E800 Series (Columbiaville)** architecture.
 
-## Reference Implementation
+Because the header is fixed-width and branchless, it maps perfectly to the **Intel DDP (Dynamic Device Personalization)** parse graph:
+*  **Silicon Steering:** The NIC matches the 48-bit `TargetID` and standardizes the flow in hardware.
+*  **Zero-Copy:** Traffic is steered directly into `AF_XDP` umem rings, bypassing the kernel scheduler entirely.
+*  **App-to-Wire Latency:** The fixed header layout allows for pre-calculated template transmission, pushing latency toward the theoretical PCIe bus minimum (~3µs).
 
-This repository contains the reference implementation in **Zig**.
+## Implementation Status
 
-### Target Architecture
+### Pre-Alpha
+
+* **Protocol Spec:** [RFC 0001](https://github.com/wilson/rfc/blob/ultra2krad4u/chronos/0001.md)
 * **Language:** Zig 0.16+ [(nightly)](https://ziglang.org/download/)
-* **Hardware:** Intel E800 Series NICs
-    * Specifically, [E810-CQDA2](https://www.intel.com/content/www/us/en/products/sku/192558/intel-ethernet-network-adapter-e810cqda2/specifications.html) and [E830-CQDA2](https://www.intel.com/content/www/us/en/products/sku/239775/intel-ethernet-network-adapter-e830cqda2/specifications.html)
-* **Driver Model:** `AF_XDP` (Zero-Copy) with [DDP](https://cdrdv2.intel.com/v1/dl/getContent/617015) (Dynamic Device Personalization).
+* **Hardware:** Initially, Intel E800 Series NICs:
+    * [E810-CQDA2](https://www.intel.com/content/www/us/en/products/sku/192558/intel-ethernet-network-adapter-e810cqda2/specifications.html)
+    * [E830-CQDA2](https://www.intel.com/content/www/us/en/products/sku/239775/intel-ethernet-network-adapter-e830cqda2/specifications.html)
+* **Driver Model:** `AF_XDP` with [Intel DDP](https://cdrdv2.intel.com/v1/dl/getContent/617015).
 
-### Why Intel E800?
-Tether's prototype utilizes the **DDP** capabilities of the Intel architecture to program the Tether Protocol Header directly into the NIC's parse graph. This allows:
-1.  **Hardware Steering:** `Context Hash` validation happens in silicon. Invalid packets never pollute the PCIe bus.
-2.  **ADQ Isolation:** Tether traffic is isolated into dedicated hardware queues, bypassing the host OS kernel scheduler.
-
-## Initial Performance Goals
-* **Throughput:** 80Gbps+ on 100GbE links (Single Core).
-* **Latency:** < 3µs (Wire-to-App).
-
-## Status
-**Pre-Alpha / Research**
-This is an experimental clean-room implementation. It is not compatible with standard IP networks, though I may implement an IPv6 bridge separately.
-
-* [ ] **Atom Layout:** 128-byte alignment definition.
-* [ ] **DDP Profile:** Intel DDP binary generation for Tether headers.
-* [ ] **Sinkhorn Solver:** Zig SIMD implementation of the transport plan.
+### Roadmap
+* [ ] **Struct Layout:** Validating `extern struct` alignment for the 64-byte header.
+* [ ] **DDP Profile:** Generating the `.pkg` file to teach the E810 parser about EtherType `0x88B5`.
+* [ ] **Credit Accounting:** Performant implementation of the atomic grant-subtraction logic.
 
 ---
 *© 02026 Wilson Bilkovich*
