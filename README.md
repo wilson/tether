@@ -38,19 +38,21 @@ Tether is designed for mechanical sympathy.
 
 This repository targets these initial architectures:
 
-1. **Modern EAL NICs with AF_XDP**: The best we can do that works across Linux/FreeBSD/Windows.
+1. **Generic EAL (AF_XDP / Netmap / RIO)**: The best "OS-Native" fast path available on the host platform (Linux, BSD, Windows respectively).
 2. **Intel E800 Series (Columbiaville)**: As above, but natively utilizing [DDP](https://cdrdv2.intel.com/v1/dl/getContent/617015) (Dynamic Device Personalization) and [DPDK](https://www.dpdk.org) (Data Plane Development Kit) instead of `AF_XDP`, for ideal performance:
     * [E810-CQDA2](https://www.intel.com/content/www/us/en/products/sku/192558/intel-ethernet-network-adapter-e810cqda2/specifications.html)
     * [E830-CQDA2](https://www.intel.com/content/www/us/en/products/sku/239775/intel-ethernet-network-adapter-e830cqda2/specifications.html)
 3. **NVIDIA ConnectX-7 (BlueField)**: Utilizing `switchdev` and hardware flow steering for ARM64 environments.
 
+> At this time, there does not seem to be a viable analogue to the above for macOS on Apple Silicon. For now, you should use [OrbStack](https://orbstack.dev) to bridge through a Linux VM that can use `AF_XDP`. When and if this changes, this repo will implement the relevant approach.
+
 ## Implementation Status
 
-### Pre-Alpha
+### Experimental
 
 * **Protocol Spec:** [RFC 0001](https://github.com/wilson/rfc/blob/ultra2krad4u/chronos/0001.md)
 * **Language:** Zig 0.16+ [(nightly)](https://ziglang.org/download/)
-* **Driver Model:** `AF_XDP` (Linux) with Hardware Flow Steering.
+* **Driver Models:** `Intel E800-series NICs` (Linux) with Hardware Flow Steering.
 
 ### Roadmap
 
