@@ -5,7 +5,7 @@
 
 This is the reference implementation of [Tether](https://github.com/wilson/rfc/blob/ultra2krad4u/chronos/0001.md).
 
-It is a connection-oriented, datagram-agnostic networking stack designed to operate deterministically across all reference frames—from 100GbE datacenter fabrics to high-latency deep-space links. It rejects the "Best Effort" and "Open World" assumptions of the IP stack in favor of **Explicit Capacity** and **Cryptographic Identity**.
+It is a connection-oriented, datagram-agnostic networking stack designed to operate deterministically across all reference frames: from 100GbE datacenter fabrics to high-latency deep-space links. It rejects the "Best Effort" and "Open World" assumptions of the IP stack in favor of **Explicit Capacity** and **Cryptographic Identity**.
 
 ## Architecture
 
